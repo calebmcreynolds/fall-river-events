@@ -33,4 +33,3 @@ def fetch_events():
 
 if __name__ == "__main__":
     fetch_events()
-Add scraper script
