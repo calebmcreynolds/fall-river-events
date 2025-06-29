@@ -1,32 +1,44 @@
 name: Build Fall River ICS
 
+# Give this workflow explicit permission to push back to the repo
+permissions:
+  contents: write
+
 on:
   schedule:
-    - cron: '0 * * * *'    # every hour on the hour
-  workflow_dispatch:      # allow manual runs
+    - cron: '0 * * * *'    # every hour
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      # 1) Check out the code *with* credentials
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true   # <-- this is key!
+          fetch-depth: 0             # (so we can commit back)
 
+      # 2) Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
+      # 3) Install your scraper deps
       - name: Install dependencies
-        run: |
-          pip install beautifulsoup4 icalendar pytz requests
+        run: pip install beautifulsoup4 icalendar pytz requests
 
+      # 4) Run the scraper to generate events.ics
       - name: Generate events.ics
         run: python generate_ics.py
 
+      # 5) Commit & push events.ics back to main
       - name: Commit and push events.ics
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add events.ics
-          git commit -m "Auto-update events.ics" || echo "No changes"
+          git commit -m "Auto-update events.ics" || echo "No changes to commit"
           git push
